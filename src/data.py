@@ -43,9 +43,24 @@ def load_data(raw_dir: str | Path) -> pd.DataFrame:
     )
     data = visits.merge(calendar[["date", "is_holiday"]], on="date", how="left")
     data = data.merge(stores[["restaurant_id", "genre", "area"]], on="restaurant_id", how="left")
-
+    
     return data.sort_values(["restaurant_id", "date"]).reset_index(drop=True)
 
+def load_calendar(raw_dir: str | Path) -> pd.DataFrame:
+    """Загружает календарь праздников (date, is_holiday).
+    
+    Возвращается отдельно от load_data, потому что
+    нужен полный календарь и для дней, отсутствующих в air_visit_data.csv.
+    """
+    raw_dir = Path(raw_dir)
+    calendar = pd.read_csv(raw_dir / "date_info.csv", parse_dates=["calendar_date"])
+    calendar = calendar.rename(
+        columns={
+            "calendar_date": "date",
+            "holiday_flg": "is_holiday",
+        }
+    )
+    return calendar[["date", "is_holiday"]]
 
 def add_synthetic_revenue(
     data: pd.DataFrame,
@@ -78,4 +93,5 @@ def prepare_dataset(
 ) -> pd.DataFrame:
     """Загружает исходные данные и добавляет синтетическую выручку."""
     data = load_data(raw_dir)
+    data = clean_data(data, calendar=load_calendar(raw_dir))
     return add_synthetic_revenue(data, random_state=random_state)
