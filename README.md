@@ -14,8 +14,8 @@
 ```text
 .
 ├── data/
-│   └── raw/                  # исходные CSV
-├── models/                   # сохранённая модель
+│   ├── raw/                  # исходные CSV
+│   └── processed/            # закэшированные признаки (features.parquet)  
 ├── notebooks/
 │   ├── 01_eda.ipynb          # исследование данных
 │   └── 02_modelling.ipynb    # обучение и сравнение моделей
