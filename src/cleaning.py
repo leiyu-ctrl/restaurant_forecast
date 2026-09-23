@@ -19,6 +19,8 @@ def add_missing_dates(data: pd.DataFrame, calendar: pd.DataFrame) -> pd.DataFram
 
     result = full_calendar.merge(data, on=["restaurant_id", "date"], how="left")
     result = result.merge(calendar[["date", "is_holiday"]], on="date", how="left", suffixes=("", "_cal"))
+    result["genre"] = result.groupby("restaurant_id")["genre"].transform("first")
+    result["area"] = result.groupby("restaurant_id")["area"].transform("first")
     result["is_holiday"] = result["is_holiday_cal"]
     return result.drop(columns="is_holiday_cal")
 
