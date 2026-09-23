@@ -10,12 +10,21 @@ def add_missing_dates(data: pd.DataFrame, calendar: pd.DataFrame) -> pd.DataFram
     """
     data = data.copy()
 
+    # активный период каждого ресторана — от его первой до последней
+    # реальной записи.
+    span = data.groupby("restaurant_id")["date"].agg(first="min", last="max")
+
     date_range = pd.date_range(data["date"].min(), data["date"].max())
     full_index = pd.MultiIndex.from_product(
         [data["restaurant_id"].unique(), date_range],
         names=["restaurant_id", "date"],
     )
     full_calendar = pd.DataFrame(index=full_index).reset_index()
+    full_calendar = full_calendar.merge(span, on="restaurant_id", how="left")
+    full_calendar = full_calendar[
+        (full_calendar["date"] >= full_calendar["first"])
+        & (full_calendar["date"] <= full_calendar["last"])
+    ].drop(columns=["first", "last"])
 
     result = full_calendar.merge(data, on=["restaurant_id", "date"], how="left")
     result = result.merge(calendar[["date", "is_holiday"]], on="date", how="left", suffixes=("", "_cal"))

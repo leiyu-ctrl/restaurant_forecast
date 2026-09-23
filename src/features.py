@@ -1,6 +1,5 @@
 """Признаки для прогноза guests.
 
-Все признаки должны быть доступны на момент прогноза.
 Лаги используют только прошлые значения guests.
 Скользящие статистики считаются со сдвигом на 1 день,
 чтобы текущий target не попал в признаки.
@@ -14,7 +13,11 @@ is_long_gap, is_regular_off) сюда не идут — см. FEATURE_COLUMNS и
 """
 
 from collections.abc import Sequence
+from pathlib import Path
 import pandas as pd
+
+from .cleaning import clean_data
+from .data import load_data
 
 DEFAULT_LAGS: tuple[int, ...] = (1, 7, 14, 21, 28)
 DEFAULT_ROLLING_WINDOWS: tuple[int, ...] = (7, 28)
@@ -97,6 +100,15 @@ def build_features(
     data = add_holiday_phase(data, calendar, holiday_window)
     return data
 
+def load_or_build_features(raw_dir, processed_path, calendar, force=False, **kwargs):
+    processed_path = Path(processed_path)
+    if processed_path.exists() and not force:
+        return pd.read_parquet(processed_path)
+
+    data = build_features(clean_data(load_data(raw_dir), calendar), calendar, **kwargs)
+    processed_path.parent.mkdir(parents=True, exist_ok=True)
+    data.to_parquet(processed_path)
+    return data
 
 # Колонки, которые отдаём в модель как признаки.
 #   guests        - таргет
@@ -106,6 +118,7 @@ def build_features(
 FEATURE_COLUMNS = [
     "restaurant_id",
     "genre",
+    "area",
     "day_of_week",
     "is_weekend",
     "month",
